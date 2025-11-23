@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>جميع المنتجات - ماهر فون</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <style>.product-img { height: 230px; object-fit: contain; }</style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark p-3">
+    <div class="container d-flex justify-content-between">
+        <a class="navbar-brand" href="index.html">📱 ماهر فون</a>
+        <div>
+            <button class="btn btn-outline-light me-2" onclick="location.href='admin.html'">🔧 Admin</button>
+            <button class="btn btn-light" onclick="location.href='cart.html'">🛒 السلة</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h2 class="mb-3">جميع المنتجات</h2>
+    <div id="allProducts" class="row g-3"></div>
+</div>
+
+<script>
+function getProducts() { let p = JSON.parse(localStorage.getItem('products')); return p && Array.isArray(p)?p:[]; }
+
+function addToCart(productId) {
+    let products = getProducts();
+    let prod = products.find(p => p.id === productId);
+    if (!prod) return alert("المنتج غير موجود");
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    cart.push({id: prod.id, name: prod.name, price: prod.price, img: prod.img});
+    localStorage.setItem('cart', JSON.stringify(cart));
+    alert("تمت إضافة المنتج للسلة");
+}
+
+function renderAll() {
+    let products = getProducts();
+    let container = document.getElementById('allProducts');
+    container.innerHTML = '';
+    if (!products || products.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">لا توجد منتجات بعد. افتح Admin لإضافة منتجات.</div>';
+        return;
+    }
+    products.forEach(prod => {
+        container.innerHTML += `
+            <div class="col-md-3">
+                <div class="card p-2 shadow-sm">
+                    <img src="${prod.img}" class="product-img mb-2" alt="${prod.name}">
+                    <h5>${prod.name}</h5>
+                    <p class="text-danger fw-bold">${prod.price.toLocaleString()} جنيه</p>
+                    <button class="btn btn-dark" onclick="addToCart('${prod.id}')">إضافة للسلة</button>
+                </div>
+            </div>
+        `;
+    });
+}
+window.addEventListener('storage', renderAll);
+renderAll();
+</script>
+
+</body>
+</html>
