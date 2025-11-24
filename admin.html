@@ -9,7 +9,39 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-app-compat.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-firestore-compat.min.js"></script>
+<script>
+  // 1) إعداد Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyBt90XB3t9_MLH8-73wcQpE7fm65Le06FE",
+    authDomain: "maher-phone.firebaseapp.com",
+    projectId: "maher-phone",
+    storageBucket: "maher-phone.firebasestorage.app",
+    messagingSenderId: "759903680635",
+    appId: "1:759903680635:web:xxxxxxxxxxxxxxx"
+  };
 
+  // 2) تشغيل Firebase
+  firebase.initializeApp(firebaseConfig);
+
+  // 3) تفعيل قاعدة البيانات
+  const db = firebase.firestore();
+
+  // 4) مثال: قراءة الطلبات من كولكشن orders
+  db.collection("orders").onSnapshot(snapshot => {
+    document.getElementById("orders-list").innerHTML = "";
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      document.getElementById("orders-list").innerHTML += `
+        <div>
+          <h3>${data.name}</h3>
+          <p>${data.phone}</p>
+          <p>${data.product}</p>
+        </div>
+        <hr>
+      `;
+    });
+  });
+</script>
 <script>
   const firebaseConfig = {apiKey:"AIzaSyBt90XB3t9_MLH8-73wcQpE7fm65Le06FE",authDomain:"maher-phone.firebaseapp.com",projectId:"maher-phone",storageBucket:"maher-phone.firebasestorage.app",messagingSenderId:"759903479842",appId:"1:759903479842:web:25c32cd6034b413dc4027b",measurementId:"G-YV7TS3LDDW"};
   firebase.initializeApp(firebaseConfig);
@@ -64,6 +96,7 @@ try {
 </script>
 </body>
 </html>
+
 
 
 
