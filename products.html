@@ -1,80 +1,30 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head><!-- Firebase SDKs -->
+<html>
+<head><title>المنتجات</title></head>
+<body>
+<h1>المتجر</h1>
+<div id="products-list"></div>
+
 <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
-<script>
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    // ... باقي القيم
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-</script>
-    <meta charset="UTF-8">
-    <title>جميع المنتجات - ماهر فون</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-    <style>.product-img { height: 230px; object-fit: contain; }</style>
-</head>
-<body class="bg-light">
-
-<nav class="navbar navbar-dark bg-dark p-3">
-    <div class="container d-flex justify-content-between">
-        <a class="navbar-brand" href="index.html">📱 ماهر فون</a>
-        <div>
-            <button class="btn btn-outline-light me-2" onclick="location.href='admin.html'">🔧 Admin</button>
-            <button class="btn btn-light" onclick="location.href='cart.html'">🛒 السلة</button>
-        </div>
-    </div>
-</nav>
-
-<div class="container mt-4">
-    <h2 class="mb-3">جميع المنتجات</h2>
-    <div id="allProducts" class="row g-3"></div>
-</div>
+<script src="cart.js"></script> <!-- اربطه هنا -->
 
 <script>
-function getProducts() { let p = JSON.parse(localStorage.getItem('products')); return p && Array.isArray(p)?p:[]; }
+const firebaseConfig = {apiKey:"AIzaSyBt90XB3t9_MLH8-73wcQpE7fm65Le06FE",authDomain:"maher-phone.firebaseapp.com",projectId:"maher-phone",storageBucket:"maher-phone.firebasestorage.app",messagingSenderId:"759903479842",appId:"1:759903479842:web:25c32cd6034b413dc4027b",measurementId:"G-YV7TS3LDDW"};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-function addToCart(productId) {
-    let products = getProducts();
-    let prod = products.find(p => p.id === productId);
-    if (!prod) return alert("المنتج غير موجود");
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    cart.push({id: prod.id, name: prod.name, price: prod.price, img: prod.img});
-    localStorage.setItem('cart', JSON.stringify(cart));
-    alert("تمت إضافة المنتج للسلة");
-}
+const list=document.getElementById('products-list');
 
-function renderAll() {
-    let products = getProducts();
-    let container = document.getElementById('allProducts');
-    container.innerHTML = '';
-    if (!products || products.length === 0) {
-        container.innerHTML = '<div class="alert alert-info">لا توجد منتجات بعد. افتح Admin لإضافة منتجات.</div>';
-        return;
-    }
-    products.forEach(prod => {
-        container.innerHTML += `
-            <div class="col-md-3">
-                <div class="card p-2 shadow-sm">
-                    <img src="${prod.img}" class="product-img mb-2" alt="${prod.name}">
-                    <h5>${prod.name}</h5>
-                    <p class="text-danger fw-bold">${prod.price.toLocaleString()} جنيه</p>
-                    <button class="btn btn-dark" onclick="addToCart('${prod.id}')">إضافة للسلة</button>
-                </div>
-            </div>
-        `;
-    });
-}
-window.addEventListener('storage', renderAll);
-renderAll();
+db.collection('products').onSnapshot(snapshot=>{
+  list.innerHTML='';
+  snapshot.forEach(doc=>{
+    const data=doc.data();
+    const el=document.createElement('div');
+    el.innerHTML=`${data.name} - ${data.price} جنيه <button onclick='addToCart({id:"${doc.id}",name:"${data.name}",price:${data.price},qty:1})'>أضف للسلة</button>`;
+    list.appendChild(el);
+  });
+});
 </script>
-
 </body>
-
 </html>
-
