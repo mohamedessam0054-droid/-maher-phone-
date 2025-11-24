@@ -1,156 +1,77 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head><!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
 <script>
   const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    // ... باقي القيم
+    apiKey: "AIzaSyBt90XB3t9_MLH8-73wcQpE7fm65Le06FE",
+    authDomain: "maher-phone.firebaseapp.com",
+    projectId: "maher-phone",
+    storageBucket: "maher-phone.firebasestorage.app",
+    messagingSenderId: "759903479842",
+    appId: "1:759903479842:web:25c32cd6034b413dc4027b",
+    measurementId: "G-YV7TS3LDDW"
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-</script>
-<meta charset="UTF-8">
-<title>سلة المشتريات - ماهر فون</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-<style>.product-img { height: 120px; object-fit: contain; }</style>
-</head>
-<body class="bg-light">
 
-<nav class="navbar navbar-dark bg-dark p-3">
-<div class="container d-flex justify-content-between">
-<a class="navbar-brand" href="index.html">📱 ماهر فون</a>
-<span class="text-white">سلة المشتريات</span>
-</div>
-</nav>
+  function genId(){return 'id-'+Date.now()+'-'+Math.random().toString(36).slice(2,9);}
+  let guestId = localStorage.getItem('guestId');
+  if(!guestId){guestId=genId();localStorage.setItem('guestId',guestId);}
+  function getCart(){return JSON.parse(localStorage.getItem('cart-'+guestId)||'[]');}
+  function saveCart(items){localStorage.setItem('cart-'+guestId,JSON.stringify(items));}
 
-<div class="container mt-4">
-<h2 class="mb-3">سلة الشراء</h2>
-<div id="cartItems" class="row g-3"></div>
-<hr>
-<h4 class="mt-3">الإجمالي: <span id="totalPrice">0</span> جنيه</h4>
-<button class="btn btn-danger mt-3" onclick="clearCart()">حذف السلة</button>
-</div>
+  function addToCart(product){
+    const cart=getCart();
+    const found=cart.find(p=>p.id===product.id);
+    if(found)found.qty+=product.qty;
+    else cart.push(product);
+    saveCart(cart);
+    renderCart();
+  }
 
-<script>
-function loadCart() {
-    let cart=JSON.parse(localStorage.getItem('cart'))||[];
-    let container=document.getElementById('cartItems'); let total=0;
+  function renderCart(){
+    const cart=getCart();
+    const container=document.getElementById('cart-items');
+    if(!container)return;
     container.innerHTML='';
-    cart.forEach((item,index)=>{
-        total+=item.price;
-        container.innerHTML+=`
-        <div class="col-md-4">
-        <div class="card p-3 shadow-sm text-center">
-        <img src="${item.img}" class="product-img mb-2">
-        <h5>${item.name}</h5>
-        <p class="text-danger fw-bold">${item.price.toLocaleString()} جنيه</p>
-        <button class="btn btn-dark" onclick="removeItem(${index})">حذف</button>
-        </div></div>`;
-    });
-    document.getElementById('totalPrice').innerText=total.toLocaleString();
-}
-
-function removeItem(index){
-    let cart=JSON.parse(localStorage.getItem('cart'))||[];
-    cart.splice(index,1); localStorage.setItem('cart',JSON.stringify(cart)); loadCart();
-}
-
-function clearCart(){ localStorage.removeItem('cart'); loadCart(); }
-
-window.addEventListener('storage',loadCart);
-loadCart();
-</script>
-
-</body>
-
-</html><script>
-// توليد UUID بسيط
-function genId() {
-  return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2,9);
-}
-let guestId = localStorage.getItem('guestId');
-if (!guestId) {
-  guestId = genId();
-  localStorage.setItem('guestId', guestId);
-}
-
-// تحميل السلة من localStorage
-function getCart() {
-  return JSON.parse(localStorage.getItem('cart-'+guestId) || '[]');
-}
-function saveCart(items) {
-  localStorage.setItem('cart-'+guestId, JSON.stringify(items));
-}
-
-// إضافة منتج للسلة (مثال)
-function addToCart(product) {
-  const cart = getCart();
-  // product = {id, name, price, qty}
-  const found = cart.find(p => p.id === product.id);
-  if (found) found.qty += product.qty;
-  else cart.push(product);
-  saveCart(cart);
-  renderCart();
-}
-
-// عرض السلة في الصفحة
-function renderCart() {
-  const cart = getCart();
-  const container = document.getElementById('cart-items'); // ضيف عنصر بالـ id دا في cart.html
-  if(!container) return;
-  container.innerHTML = '';
-  cart.forEach(item => {
-    const el = document.createElement('div');
-    el.innerText = ${item.name} - ${item.qty} × ${item.price};
-    container.appendChild(el);
-  });
-}
-
-// Checkout: رفع السلة وبيانات العميل لـ Firestore
-async function checkout(name, phone, address) {
-  const cart = getCart();
-  if (!cart.length) { alert('السلة فاضية'); return; }
-  const docRef = db.collection('carts').doc(guestId);
-  await docRef.set({
-    guestId,
-    items: cart,
-    name,
-    phone,
-    address,
-    status: 'new',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-  // اختياري: مسح السلة محليًا بعد الطلب
-  localStorage.removeItem('cart-'+guestId);
-  alert('تم إرسال الطلب! هنتواصل معاك قريبا');
-  renderCart();
-}
-
-// مثال: ربط فورم الـ checkout بزرار
-document.addEventListener('DOMContentLoaded', () => {
-  renderCart();
-  const checkoutForm = document.getElementById('checkout-form');
-  if (checkoutForm) {
-    checkoutForm.addEventListener('submit', (e)=>{
-      e.preventDefault();
-      const name = checkoutForm.querySelector('[name=name]').value;
-      const phone = checkoutForm.querySelector('[name=phone]').value;
-      const address = checkoutForm.querySelector('[name=address]').value;
-      checkout(name, phone, address).catch(err => { console.error(err); alert('حصل خطأ'); });
+    cart.forEach(item=>{
+      const el=document.createElement('div');
+      el.innerText=`${item.name} - ${item.qty} × ${item.price}`;
+      container.appendChild(el);
     });
   }
-});
+
+  async function checkout(name,phone,address){
+    const cart=getCart();
+    if(!cart.length){alert('السلة فاضية');return;}
+    await db.collection('carts').doc(guestId).set({
+      guestId,
+      items: cart,
+      name,
+      phone,
+      address,
+      status:'new',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // افتح واتساب مع بيانات الطلب
+    let text=`طلب جديد من ${name}%0Aرقم: ${phone}%0Aعنوان: ${address}%0Aسلة:%0A`;
+    cart.forEach(i=>{text+=`${i.name} - ${i.qty} × ${i.price}%0A`;});
+    window.open(https://wa.me/201110112115?text=${text},'_blank');
+    localStorage.removeItem('cart-'+guestId);
+    renderCart();
+    alert('تم إرسال الطلب! سيتم فتح واتساب لإكمال التواصل.');
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    renderCart();
+    const checkoutForm=document.getElementById('checkout-form');
+    if(checkoutForm){
+      checkoutForm.addEventListener('submit',(e)=>{
+        e.preventDefault();
+        const name=checkoutForm.querySelector('[name=name]').value;
+        const phone=checkoutForm.querySelector('[name=phone]').value;
+        const address=checkoutForm.querySelector('[name=address]').value;
+        checkout(name,phone,address).catch(err=>{console.error(err);alert('حصل خطأ');});
+      });
+    }
+  });
 </script>
-<form id="checkout-form">
-  <input name="name" placeholder="اسمك" required />
-  <input name="phone" placeholder="رقم الموبايل" required />
-  <input name="address" placeholder="عنوان الاستلام" required />
-  <button type="submit">ارسال الطلب</button>
-</form>
-
-
