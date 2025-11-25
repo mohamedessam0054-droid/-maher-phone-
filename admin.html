@@ -2,139 +2,85 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>لوحة تحكم الطلبات</title>
-  <link rel="stylesheet" href="style.css">
+  <title>لوحة تحكم Maher - محلي</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; direction: rtl; }
+    h1, h2 { color: #333; }
+    .product, #products-list div { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+    button { margin-top: 5px; padding: 5px 10px; cursor: pointer; }
+    input, textarea { width: 100%; padding: 5px; margin-bottom: 10px; }
+  </style>
 </head>
 <body>
-<h1>لوحة التحكم - الطلبات</h1>
 
-<div class="counters">
-  <span id="total-count">الكل: 0</span>
-  <span id="new-count">جديد: 0</span>
-  <span id="ordered-count">تم الطلب: 0</span>
-</div>
+<h1>لوحة تحكم Maher - المنتجات المحلية</h1>
 
-<div class="filter">
-  <label>فلتر حسب الحالة: </label>
-  <select id="status-filter">
-    <option value="all">الكل</option>
-    <option value="new">جديد</option>
-    <option value="ordered">تم الطلب</option>
-  </select>
-</div>
+<h2>إضافة منتج جديد</h2>
+<form id="product-form">
+  <input type="text" id="name" placeholder="اسم المنتج" required>
+  <input type="number" id="price" placeholder="السعر" required>
+  <textarea id="description" placeholder="الوصف" required></textarea>
+  <input type="text" id="image" placeholder="رابط الصورة" required>
+  <button type="submit">أضف المنتج</button>
+</form>
 
-<div id="orders-list">جارٍ تحميل الطلبات...</div>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
-<script src="firebaseConfig.js"></script>
+<h2>المنتجات الحالية</h2>
+<div id="products-list">لا توجد منتجات بعد</div>
 
 <script>
-let currentFilter = 'all';
+let products = JSON.parse(localStorage.getItem('products')) || [];
 
-// جلب الطلبات
-async function loadOrders(filter='all') {
-  currentFilter = filter;
-  const container = document.getElementById('orders-list');
-  container.innerHTML = '';
-  try {
-    let query = db.collection('carts').orderBy('createdAt','desc');
-    if(filter !== 'all') query = query.where('status','==',filter);
+const form = document.getElementById('product-form');
+const productsList = document.getElementById('products-list');
 
-    const snapshot = await query.get();
-    if(snapshot.empty){
-      container.innerText = 'لا توجد طلبات حالياً';
-      updateCounters([]);
-      return;
-    }
-
-    const orders = [];
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      orders.push(data);
-      const div = document.createElement('div');
-      div.className = 'order';
-      div.id = doc.id;
-
-      let itemsText = '';
-      if(data.items && data.items.length){
-        data.items.forEach(item => {
-          itemsText += ${item.name} - ${item.qty} × ${item.price}\n;
-        });
-      }
-
-      div.innerHTML = `
-        <div><strong>الاسم:</strong> ${data.name || '-'}</div>
-        <div><strong>الهاتف:</strong> ${data.phone || '-'}</div>
-        <div><strong>العنوان:</strong> ${data.address || '-'}</div>
-        <div><strong>الحالة:</strong> ${data.status || 'new'}</div>
-        <div><strong>السلة:</strong><pre>${itemsText}</pre></div>
-        <button onclick="updateStatus('${doc.id}')">تغيير الحالة</button>
-        <button onclick="deleteOrder('${doc.id}')">حذف الطلب</button>
-      `;
-      container.appendChild(div);
-    });
-
-    updateCounters(orders);
-
-  } catch(err){
-    console.error(err);
-    container.innerText = 'حدث خطأ أثناء تحميل الطلبات';
-    updateCounters([]);
+// عرض المنتجات
+function renderProducts() {
+  productsList.innerHTML = "";
+  if(products.length === 0){
+    productsList.textContent = "لا توجد منتجات بعد";
+    return;
   }
+  products.forEach((p, index) => {
+    const div = document.createElement('div');
+    div.className = 'product';
+    div.innerHTML = `
+      <strong>${p.name}</strong> - ${p.price} جنيه
+      <p>${p.description}</p>
+      <img src="${p.image}" width="100">
+      <br>
+      <button onclick="deleteProduct(${index})">حذف</button>
+    `;
+    productsList.appendChild(div);
+  });
 }
 
-// تحديث العدادات
-function updateCounters(orders) {
-  const total = orders.length;
-  const newCount = orders.filter(o => o.status === 'new').length;
-  const orderedCount = orders.filter(o => o.status === 'ordered').length;
+// إضافة منتج
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const name = document.getElementById('name').value;
+  const price = parseInt(document.getElementById('price').value);
+  const description = document.getElementById('description').value;
+  const image = document.getElementById('image').value;
 
-  document.getElementById('total-count').innerText = الكل: ${total};
-  document.getElementById('new-count').innerText = جديد: ${newCount};
-  document.getElementById('ordered-count').innerText = تم الطلب: ${orderedCount};
-}
-
-// تغيير الحالة
-async function updateStatus(orderId){
-  try {
-    const docRef = db.collection('carts').doc(orderId);
-    const doc = await docRef.get();
-    if(!doc.exists) return alert('الطلب غير موجود');
-
-    const currentStatus = doc.data().status || 'new';
-    const newStatus = currentStatus === 'new' ? 'ordered' : 'new';
-    await docRef.update({status: newStatus, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
-    loadOrders(currentFilter);
-  } catch(err){
-    console.error(err);
-    alert('حدث خطأ أثناء تغيير الحالة');
-  }
-}
-
-// حذف الطلب
-async function deleteOrder(orderId){
-  if(!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
-  try {
-    await db.collection('carts').doc(orderId).delete();
-    loadOrders(currentFilter);
-  } catch(err){
-    console.error(err);
-    alert('حدث خطأ أثناء حذف الطلب');
-  }
-}
-
-// فلتر
-document.getElementById('status-filter').addEventListener('change', e => {
-  loadOrders(e.target.value);
+  products.push({name, price, description, image});
+  localStorage.setItem('products', JSON.stringify(products));
+  form.reset();
+  renderProducts();
 });
 
-// تحميل أولي + تحديث تلقائي
+// حذف منتج
+function deleteProduct(index){
+  if(!confirm('هل تريد حذف هذا المنتج؟')) return;
+  products.splice(index,1);
+  localStorage.setItem('products', JSON.stringify(products));
+  renderProducts();
+}
+
+// تحميل المنتجات عند فتح الصفحة
 document.addEventListener('DOMContentLoaded', () => {
-  loadOrders();
-  setInterval(() => loadOrders(currentFilter), 2000);
+  renderProducts();
 });
 </script>
+
 </body>
 </html>
