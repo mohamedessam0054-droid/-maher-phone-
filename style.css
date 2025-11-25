@@ -1,11 +1,10 @@
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
+  direction: rtl;
 }
-h1, h2 {
-  color: #333;
-}
-#products-container div, #cart-container div {
+h1, h2 { color: #333; }
+.product, .order, #cart-container div {
   border: 1px solid #ccc;
   padding: 10px;
   margin-bottom: 10px;
