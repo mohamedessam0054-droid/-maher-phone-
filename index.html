@@ -1,111 +1,73 @@
+
+لقد أرسلت
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-<meta charset="UTF-8">
-<title>متجر Maher</title>
-<style>
-  body{font-family:Arial,sans-serif; padding:20px; direction:rtl;}
-  .product, .cart-item{border:1px solid #ccc;padding:10px;margin-bottom:10px;}
-</style>
+  <meta charset="UTF-8">
+  <title>متجر Maher</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <h1>متجر Maher</h1>
 
 <h2>المنتجات</h2>
-<div id="products-list"></div>
+<div id="products-container">جارٍ تحميل المنتجات...</div>
 
 <h2>السلة</h2>
-<div id="cart-items">السلة فارغة</div>
-
-<form id="checkout-form">
-  <input type="text" name="name" placeholder="اسمك" required>
-  <input type="text" name="phone" placeholder="رقم الهاتف" required>
-  <input type="text" name="address" placeholder="العنوان" required>
-  <button type="submit">الدفع</button>
-</form>
+<div id="cart-container">السلة فارغة</div>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js"></script>
+<script src="firebaseConfig.js"></script>
 
 <script>
-function genId(){return 'id-'+Date.now()+'-'+Math.random().toString(36).slice(2,9);}
-let guestId = localStorage.getItem('guestId');
-if(!guestId){guestId=genId();localStorage.setItem('guestId',guestId);}
-function getCart(){return JSON.parse(localStorage.getItem('cart-'+guestId)||'[]');}
-function saveCart(items){localStorage.setItem('cart-'+guestId,JSON.stringify(items));}
+const productsContainer = document.getElementById("products-container");
+const cartContainer = document.getElementById("cart-container");
 
-function renderCart(){
-  const cart = getCart();
-  const container = document.getElementById('cart-items');
-  container.innerHTML='';
-  if(!cart.length){container.innerText='السلة فارغة'; return;}
-  cart.forEach(i=>{
-    const el = document.createElement('div');
-    el.className='cart-item';
-    el.innerText=`${i.name} - ${i.qty} × ${i.price}`;
-    container.appendChild(el);
-  });
-}
+let cart = [];
 
-function addToCart(product){
-  const cart = getCart();
-  const found = cart.find(p=>p.id===product.id);
-  if(found) found.qty += product.qty;
-  else cart.push(product);
-  saveCart(cart);
-  renderCart();
-}
-
-// ======== تحميل المنتجات من Firestore ========
-async function loadProducts(){
-  const container = document.getElementById('products-list');
-  container.innerHTML='جارٍ التحميل...';
-  const snapshot = await db.collection('products').get();
-  container.innerHTML='';
-  snapshot.forEach(doc=>{
-    const p = doc.data();
-    const el = document.createElement('div');
-    el.className='product';
-    el.innerHTML = <strong>${p.name}</strong> - السعر: ${p.price} <button onclick="addToCart({...p, qty:1})">أضف للسلة</button>;
-    container.appendChild(el);
-  });
-}
-
-async function checkout(name,phone,address){
-  const cart = getCart();
-  if(!cart.length){alert('السلة فاضية'); return;}
-  await db.collection('carts').doc(guestId).set({
-    guestId,
-    items: cart,
-    name,
-    phone,
-    address,
-    status:'new',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-  localStorage.removeItem('cart-'+guestId);
-  renderCart();
-  alert('تم إرسال الطلب!');
-}
-
-document.addEventListener('DOMContentLoaded',()=>{
-  loadProducts();
-  renderCart();
-  const form=document.getElementById('checkout-form');
-  form.addEventListener('submit',e=>{
-    e.preventDefault();
-    const name=form.name.value;
-    const phone=form.phone.value;
-    const address=form.address.value;
-    checkout(name,phone,address).catch(err=>{console.error(err); alert('حصل خطأ');});
+// جلب المنتجات من Firestore
+db.collection("products").get().then(snapshot => {
+  productsContainer.innerHTML = "";
+  if(snapshot.empty){
+    productsContainer.innerText = "لا توجد منتجات حالياً";
+    return;
+  }
+  snapshot.forEach(doc => {
+    const product = doc.data();
+    const div = document.createElement("div");
+    div.className = "product";
+    div.innerHTML = `
+      <h3>${product.name}</h3>
+      <p>${product.description}</p>
+      <p>السعر: ${product.price} جنيه</p>
+      <img src="${product.image}" alt="${product.name}">
+      <button onclick="addToCart('${product.name}', ${product.price})">أضف للسلة</button>
+    `;
+    productsContainer.appendChild(div);
   });
 });
+
+// إضافة للسلة
+function addToCart(name, price){
+  cart.push({name, price});
+  renderCart();
+}
+
+// عرض محتوى السلة
+function renderCart(){
+  cartContainer.innerHTML = "";
+  if(cart.length === 0){
+    cartContainer.textContent = "السلة فارغة";
+    return;
+  }
+  cart.forEach(item => {
+    const div = document.createElement("div");
+    div.textContent = ${item.name} - ${item.price} جنيه;
+    cartContainer.appendChild(div);
+  });
+}
 </script>
 </body>
 </html>
-
-
-    
