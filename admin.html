@@ -7,96 +7,95 @@
 <h1>لوحة التحكم - الطلبات</h1>
 <div id="orders-list">جارٍ التحميل...</div>
 
+<!-- Firebase compat -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-app-compat.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.1/firebase-firestore-compat.min.js"></script>
+
 <script>
-  // 1) إعداد Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyBt90XB3t9_MLH8-73wcQpE7fm65Le06FE",
-    authDomain: "maher-phone.firebaseapp.com",
-    projectId: "maher-phone",
-    storageBucket: "maher-phone.firebasestorage.app",
-    messagingSenderId: "759903680635",
-    appId: "1:759903680635:web:xxxxxxxxxxxxxxx"
-  };
+// إعداد Firebase (مرة واحدة فقط)
+const firebaseConfig = {
+  apiKey: "AIzaSyBt90XB3t9_MLH8-73wcQpE7fm65Le06FE",
+  authDomain: "maher-phone.firebaseapp.com",
+  projectId: "maher-phone",
+  storageBucket: "maher-phone.firebasestorage.app",
+  messagingSenderId: "759903680635",
+  appId: "1:759903680635:web:xxxxxxxxxxxxxxx"
+};
 
-  // 2) تشغيل Firebase
-  firebase.initializeApp(firebaseConfig);
+// تشغيل Firebase مرة واحدة فقط
+firebase.initializeApp(firebaseConfig);
 
-  // 3) تفعيل قاعدة البيانات
-  const db = firebase.firestore();
+// Firestore
+const db = firebase.firestore();
 
-  // 4) مثال: قراءة الطلبات من كولكشن orders
-  db.collection("orders").onSnapshot(snapshot => {
-    document.getElementById("orders-list").innerHTML = "";
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      document.getElementById("orders-list").innerHTML += `
-        <div>
-          <h3>${data.name}</h3>
-          <p>${data.phone}</p>
-          <p>${data.product}</p>
-        </div>
-        <hr>
-      `;
-    });
-  });
-</script>
-<script>
-  const firebaseConfig = {apiKey:"AIzaSyBt90XB3t9_MLH8-73wcQpE7fm65Le06FE",authDomain:"maher-phone.firebaseapp.com",projectId:"maher-phone",storageBucket:"maher-phone.firebasestorage.app",messagingSenderId:"759903479842",appId:"1:759903479842:web:25c32cd6034b413dc4027b",measurementId:"G-YV7TS3LDDW"};
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+// تحميل الطلبات
+async function loadOrders() {
+  const list = document.getElementById('orders-list');
+  list.innerHTML = 'جارٍ التحميل...';
 
-  async function loadOrders(){
-    const list=document.getElementById('orders-list');
-    list.innerHTML='جارٍ التحميل...';
   let snap;
-try {
-  snap = await db.collection('carts')
-    .orderBy('createdAt', 'desc')
-    .get();
-} catch (e) {
-  document.getElementById('orders-list').innerHTML =
-    '❌ خطأ: تأكد إن كل الطلبات فيها createdAt وإن قواعد Firestore تسمح بالقراءة.<br><br>' + e;
-  return;
+  try {
+    snap = await db.collection('carts')
+      .orderBy('createdAt', 'desc')
+      .get();
+  } catch (e) {
+    list.innerHTML = '❌ خطأ في القراءة من Firestore:<br>' + e;
+    return;
+  }
+
+  list.innerHTML = '';
+
+  snap.forEach(doc => {
+    const data = doc.data();
+    const div = document.createElement('div');
+
+    div.innerHTML = `
+      <strong>${data.name || 'زائر'}</strong> — ${data.phone || ''} <br>
+      <small>${data.address || ''}</small><br>
+      <small>${data.createdAt ? data.createdAt.toDate() : ''}</small>
+      <div>
+        <button onclick="viewOrder('${doc.id}')">عرض السلة</button>
+        <button onclick="setStatus('${doc.id}','processing')">قيد التنفيذ</button>
+        <button onclick="setStatus('${doc.id}','done')">تم</button>
+      </div>
+      <hr>
+    `;
+
+    list.appendChild(div);
+  });
 }
-    list.innerHTML='';
-    snap.forEach(doc=>{
-      const data=doc.data();
-      const el=document.createElement('div');
-      el.className='order';
-      el.innerHTML=`<strong>${data.name || 'زائر'}</strong> — ${data.phone || ''} — ${data.address || ''} <br/>
-        <small>id: ${data.guestId} — ${data.createdAt ? data.createdAt.toDate() : ''}</small>
-        <div>
-          <button onclick="viewOrder('${doc.id}')">عرض السلة</button>
-          <button onclick="setStatus('${doc.id}','processing')">قيد التنفيذ</button>
-          <button onclick="setStatus('${doc.id}','done')">تم</button>
-        </div><hr/>`;
-      list.appendChild(el);
-    });
-  }
 
-  window.viewOrder=async function(id){
-    const doc=await db.collection('carts').doc(id).get();
-    if(!doc.exists)return alert('مش لاقي الطلب');
-    const data=doc.data();
-    let html=`<h3>طلب ${data.name || 'زائر'}</h3><p>هاتف: ${data.phone}<br/>عنوان: ${data.address}</p><ul>`;
-    data.items.forEach(i=>{html+=`<li>${i.name} — ${i.qty} × ${i.price}</li>`;});
-    html+='</ul><p>حالة: '+(data.status||'new')+'</p>';
-    const w=window.open('', '_blank'); w.document.write(html);
-  }
+// عرض طلب
+window.viewOrder = async function(id) {
+  const doc = await db.collection('carts').doc(id).get();
+  if (!doc.exists) return alert("الطلب غير موجود");
 
-  window.setStatus=async function(id,status){
-    await db.collection('carts').doc(id).update({status});
-    alert('تم تحديث الحالة إلى '+status);
-    loadOrders();
-  }
+  const data = doc.data();
+  let html = `
+    <h3>طلب ${data.name}</h3>
+    <p>هاتف: ${data.phone}<br>عنوان: ${data.address}</p>
+    <ul>
+  `;
 
-  document.addEventListener('DOMContentLoaded',loadOrders);
+  data.items.forEach(i => {
+    html += <li>${i.name} — ${i.qty} × ${i.price}</li>;
+  });
+
+  html += </ul><p>الحالة: ${data.status || "new"}</p>;
+
+  const w = window.open("", "_blank");
+  w.document.write(html);
+};
+
+// تغيير حالة الطلب
+window.setStatus = async function(id, status) {
+  await db.collection('carts').doc(id).update({ status });
+  alert("تم التحديث");
+  loadOrders();
+};
+
+document.addEventListener("DOMContentLoaded", loadOrders);
 </script>
+
 </body>
 </html>
-
-
-
-
