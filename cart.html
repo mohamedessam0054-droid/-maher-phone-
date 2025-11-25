@@ -2,11 +2,11 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>سلة التسوق المتكاملة</title>
+  <title>سلة التسوق التفاعلية</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; direction: rtl; }
-    .product { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; max-width: 300px; }
-    .product button { margin-top: 5px; padding: 5px 10px; cursor: pointer; }
+    .product, .cart-item { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; max-width: 300px; }
+    .product button, .cart-item button { margin: 5px 5px 0 0; padding: 5px 10px; cursor: pointer; }
     #cart-items div { margin-bottom: 5px; }
     input, button { margin: 5px 0; padding: 8px; width: 100%; max-width: 300px; }
     h1,h2 { margin-top: 20px; }
@@ -108,6 +108,23 @@
     }
   }
 
+  function updateCartItem(productId, newQty) {
+    let cart = getCart();
+    cart = cart.map(p => {
+      if (p.id === productId) p.qty = newQty;
+      return p;
+    }).filter(p => p.qty > 0);
+    saveCart(cart);
+    renderCart();
+  }
+
+  function removeCartItem(productId) {
+    let cart = getCart();
+    cart = cart.filter(p => p.id !== productId);
+    saveCart(cart);
+    renderCart();
+  }
+
   function renderCart() {
     const cart = getCart();
     const container = document.getElementById('cart-items');
@@ -115,7 +132,13 @@
     container.innerHTML = '';
     cart.forEach(item => {
       const el = document.createElement('div');
-      el.innerText = ${item.name} - ${item.qty} × ${item.price};
+      el.className = 'cart-item';
+      el.innerHTML = `
+        ${item.name} - ${item.qty} × ${item.price}
+        <button onclick="updateCartItem('${item.id}', ${item.qty+1})">+</button>
+        <button onclick="updateCartItem('${item.id}', ${item.qty-1})">-</button>
+        <button onclick="removeCartItem('${item.id}')">حذف</button>
+      `;
       container.appendChild(el);
     });
     if (!cart.length) container.innerText = 'السلة فارغة';
@@ -164,7 +187,11 @@
       });
     }
   });
-</script>
 
+  // لجعل updateCartItem و removeCartItem متاحة في onclick
+  window.updateCartItem = updateCartItem;
+  window.removeCartItem = removeCartItem;
+
+</script>
 </body>
 </html>
