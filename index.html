@@ -1,95 +1,108 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <title>ماهر فون</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-    <style>
-        body { background: #f5f5f5; }
-        .product-img { height: 220px; object-fit: contain; }
-        .navbar-brand { font-size: 25px; font-weight: bold; }
-    </style>
+<meta charset="UTF-8">
+<title>متجر Maher</title>
+<style>
+  body{font-family:Arial,sans-serif; padding:20px; direction:rtl;}
+  .product, .cart-item{border:1px solid #ccc;padding:10px;margin-bottom:10px;}
+</style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark bg-dark p-3">
-    <div class="container d-flex justify-content-between">
-        <a class="navbar-brand" href="#">📱 ماهر فون</a>
-        <div>
-            <button class="btn btn-outline-light me-2" onclick="location.href='products.html'">جميع المنتجات</button>
-            <button class="btn btn-light" onclick="location.href='cart.html'">🛒 السلة</button>
-            <button class="btn btn-outline-warning" onclick="location.href='admin.html'">🔧 Admin</button>
-        </div>
-    </div>
-</nav>
+<h1>متجر Maher</h1>
 
-<div class="container mt-4">
-    <div class="p-5 text-center bg-white rounded shadow">
-        <h1 class="mb-3">مرحبًا بك في متجر ماهر فون</h1>
-        <p class="lead">أفضل أسعار الموبايلات في مصر – شحن لجميع المحافظات</p>
-        <button onclick="location.href='products.html'" class="btn btn-dark btn-lg mt-3">تصفّح المنتجات</button>
-    </div>
+<h2>المنتجات</h2>
+<div id="products-list"></div>
 
-    <h2 class="mt-5">أحدث المنتجات</h2>
-    <div id="previewProducts" class="row g-4 mt-2"></div>
-</div>
+<h2>السلة</h2>
+<div id="cart-items">السلة فارغة</div>
 
-<footer class="bg-dark text-white text-center p-3 mt-5">
-    جميع الحقوق محفوظة © ماهر فون 2025
-</footer>
+<form id="checkout-form">
+  <input type="text" name="name" placeholder="اسمك" required>
+  <input type="text" name="phone" placeholder="رقم الهاتف" required>
+  <input type="text" name="address" placeholder="العنوان" required>
+  <button type="submit">الدفع</button>
+</form>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 
 <script>
-function getProducts() {
-    let p = JSON.parse(localStorage.getItem('products'));
-    return p && Array.isArray(p) ? p : [];
+function genId(){return 'id-'+Date.now()+'-'+Math.random().toString(36).slice(2,9);}
+let guestId = localStorage.getItem('guestId');
+if(!guestId){guestId=genId();localStorage.setItem('guestId',guestId);}
+function getCart(){return JSON.parse(localStorage.getItem('cart-'+guestId)||'[]');}
+function saveCart(items){localStorage.setItem('cart-'+guestId,JSON.stringify(items));}
+
+function renderCart(){
+  const cart = getCart();
+  const container = document.getElementById('cart-items');
+  container.innerHTML='';
+  if(!cart.length){container.innerText='السلة فارغة'; return;}
+  cart.forEach(i=>{
+    const el = document.createElement('div');
+    el.className='cart-item';
+    el.innerText=`${i.name} - ${i.qty} × ${i.price}`;
+    container.appendChild(el);
+  });
 }
 
-function cryptoRandomId() {
-    return 'id-' + Math.random().toString(36).slice(2,9);
+function addToCart(product){
+  const cart = getCart();
+  const found = cart.find(p=>p.id===product.id);
+  if(found) found.qty += product.qty;
+  else cart.push(product);
+  saveCart(cart);
+  renderCart();
 }
 
-// إضافة منتج للسلة
-function addToCart(productId) {
-    let products = getProducts();
-    let prod = products.find(p => p.id === productId);
-    if (!prod) return alert("المنتج غير موجود");
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
-    cart.push({id: prod.id, name: prod.name, price: prod.price, img: prod.img});
-    localStorage.setItem('cart', JSON.stringify(cart));
-    alert("تمت إضافة المنتج للسلة");
+// ======== تحميل المنتجات من Firestore ========
+async function loadProducts(){
+  const container = document.getElementById('products-list');
+  container.innerHTML='جارٍ التحميل...';
+  const snapshot = await db.collection('products').get();
+  container.innerHTML='';
+  snapshot.forEach(doc=>{
+    const p = doc.data();
+    const el = document.createElement('div');
+    el.className='product';
+    el.innerHTML = <strong>${p.name}</strong> - السعر: ${p.price} <button onclick="addToCart({...p, qty:1})">أضف للسلة</button>;
+    container.appendChild(el);
+  });
 }
 
-// عرض أحدث المنتجات (آخر 3 منتجات)
-function renderPreview() {
-    let products = getProducts();
-    let container = document.getElementById('previewProducts');
-    container.innerHTML = '';
-    if (!products || products.length === 0) {
-        container.innerHTML = '<p class="text-center">لا توجد منتجات بعد.</p>';
-        return;
-    }
-    let slice = products.slice(-3).reverse();
-    slice.forEach(prod => {
-        container.innerHTML += `
-            <div class="col-md-4">
-                <div class="card shadow-sm">
-                    <img src="${prod.img}" class="card-img-top product-img">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">${prod.name}</h5>
-                        <p class="text-danger fw-bold">${prod.price.toLocaleString()} جنيه</p>
-                        <button class="btn btn-dark" onclick="addToCart('${prod.id}')">إضافة للسلة</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
+async function checkout(name,phone,address){
+  const cart = getCart();
+  if(!cart.length){alert('السلة فاضية'); return;}
+  await db.collection('carts').doc(guestId).set({
+    guestId,
+    items: cart,
+    name,
+    phone,
+    address,
+    status:'new',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  localStorage.removeItem('cart-'+guestId);
+  renderCart();
+  alert('تم إرسال الطلب!');
 }
 
-// راح يتنفذ كل مرة تتغير المنتجات
-window.addEventListener('storage', renderPreview);
-renderPreview();
+document.addEventListener('DOMContentLoaded',()=>{
+  loadProducts();
+  renderCart();
+  const form=document.getElementById('checkout-form');
+  form.addEventListener('submit',e=>{
+    e.preventDefault();
+    const name=form.name.value;
+    const phone=form.phone.value;
+    const address=form.address.value;
+    checkout(name,phone,address).catch(err=>{console.error(err); alert('حصل خطأ');});
+  });
+});
 </script>
-
 </body>
 </html>
