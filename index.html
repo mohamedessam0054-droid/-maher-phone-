@@ -3,9 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <title>متجر Maher</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; direction: rtl; }
+    h1, h2 { color: #333; }
+    .product, #cart-container div { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+    img { display: block; margin-top: 5px; width: 150px; }
+    button { margin-top: 5px; padding: 5px 10px; cursor: pointer; }
+  </style>
 </head>
 <body>
+
 <h1>متجر Maher</h1>
 
 <h2>المنتجات</h2>
@@ -17,24 +24,9 @@
 <script>
 // ===== المنتجات المحلية =====
 const products = [
-  {
-    name: "Samsung Galaxy S23",
-    price: 15000,
-    description: "موبايل ممتاز",
-    image: "https://i.imgur.com/1.jpg"
-  },
-  {
-    name: "iPhone 14 Pro",
-    price: 25000,
-    description: "موبايل قوي وجميل",
-    image: "https://i.imgur.com/2.jpg"
-  },
-  {
-    name: "Xiaomi Redmi Note 12",
-    price: 8000,
-    description: "موبايل ممتاز بسعر كويس",
-    image: "https://i.imgur.com/3.jpg"
-  }
+  { name: "Samsung Galaxy S23", price: 15000, description: "موبايل ممتاز", image: "https://i.imgur.com/1.jpg" },
+  { name: "iPhone 14 Pro", price: 25000, description: "موبايل قوي وجميل", image: "https://i.imgur.com/2.jpg" },
+  { name: "Xiaomi Redmi Note 12", price: 8000, description: "موبايل ممتاز بسعر كويس", image: "https://i.imgur.com/3.jpg" }
 ];
 
 const productsContainer = document.getElementById("products-container");
@@ -75,5 +67,6 @@ function renderCart(){
   });
 }
 </script>
+
 </body>
 </html>
