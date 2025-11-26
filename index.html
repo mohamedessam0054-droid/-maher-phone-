@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>متجر Maher</title>
 
@@ -47,14 +47,14 @@ button {
 <div id="content">جارٍ التحميل...</div>
 
 <script>
-// ========== المنتجات (نسخة بدون Firebase) ==========
+// ========= المنتجات ===========
 const products = [
     { id: 1, name: "ايفون 11", price: 12000 },
     { id: 2, name: "سامسونج A24", price: 9500 },
     { id: 3, name: "شاومي Note 12", price: 8200 }
 ];
 
-// ========== عرض المنتجات ==========
+// ========= عرض المنتجات ===========
 function showProducts() {
     let html = "";
     products.forEach(p => {
@@ -66,10 +66,11 @@ function showProducts() {
             </div>
         `;
     });
+
     document.getElementById("content").innerHTML = html;
 }
 
-// ========== إضافة للسلة ==========
+// ========= إضافة للسلة ===========
 function addToCart(id) {
     let cart = JSON.parse(localStorage.getItem("cart") || "[]");
     const product = products.find(p => p.id === id);
@@ -78,9 +79,10 @@ function addToCart(id) {
     alert("تمت الإضافة للسلة");
 }
 
-// ========== عرض السلة ==========
+// ========= عرض السلة ===========
 function showCart() {
     let cart = JSON.parse(localStorage.getItem("cart") || "[]");
+
     if (cart.length === 0) {
         document.getElementById("content").innerHTML = "السلة فارغة";
         return;
@@ -95,10 +97,11 @@ function showCart() {
             </div>
         `;
     });
+
     document.getElementById("content").innerHTML = html;
 }
 
-// افتح المنتجات تلقائي عند الدخول
+// افتح المنتجات تلقائي
 showProducts();
 </script>
 
