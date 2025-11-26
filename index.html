@@ -1,71 +1,130 @@
+
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>متجر Maher</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; direction: rtl; }
-    h1, h2 { color: #333; }
-    .product, #cart-container div { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
-    img { display: block; margin-top: 5px; width: 150px; }
-    button { margin-top: 5px; padding: 5px 10px; cursor: pointer; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>متجر Maher</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: #f4f4f4;
+}
+nav {
+    margin-bottom: 20px;
+}
+nav a {
+    margin-left: 15px;
+    text-decoration: none;
+    font-size: 20px;
+    color: #000;
+}
+.product {
+    background: white;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+}
+button {
+    padding: 8px 12px;
+    border: none;
+    background: #008cff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+</style>
 </head>
+
 <body>
 
 <h1>متجر Maher</h1>
 
-<h2>المنتجات</h2>
-<div id="products-container"></div>
+<nav>
+    <a href="#" onclick="loadProducts()">المنتجات</a>
+    <a href="#" onclick="loadCart()">السلة</a>
+</nav>
 
-<h2>السلة</h2>
-<div id="cart-container">السلة فارغة</div>
+<div id="content">جارٍ التحميل...</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <script>
-// ===== المنتجات المحلية =====
-const products = [
-  { name: "Samsung Galaxy S23", price: 15000, description: "موبايل ممتاز", image: "https://i.imgur.com/1.jpg" },
-  { name: "iPhone 14 Pro", price: 25000, description: "موبايل قوي وجميل", image: "https://i.imgur.com/2.jpg" },
-  { name: "Xiaomi Redmi Note 12", price: 8000, description: "موبايل ممتاز بسعر كويس", image: "https://i.imgur.com/3.jpg" }
-];
+// ======== Firebase Config ==========
+const firebaseConfig = {
+    apiKey: "AIzaSyBt90XB3t9_MLH8-73wcQpE7fm65Le06FE",
+    authDomain: "maher-phone.firebaseapp.com",
+    projectId: "maher-phone",
+    storageBucket: "maher-phone.firebasestorage.app",
+    messagingSenderId: "75990321121",
+    appId: "1:75990321121:web:12345"
+};
 
-const productsContainer = document.getElementById("products-container");
-const cartContainer = document.getElementById("cart-container");
-let cart = [];
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-// عرض المنتجات
-products.forEach(product => {
-  const div = document.createElement("div");
-  div.className = "product";
-  div.innerHTML = `
-    <h3>${product.name}</h3>
-    <p>${product.description}</p>
-    <p>السعر: ${product.price} جنيه</p>
-    <img src="${product.image}" alt="${product.name}">
-    <button onclick="addToCart('${product.name}', ${product.price})">أضف للسلة</button>
-  `;
-  productsContainer.appendChild(div);
-});
+// ======== Load Products ==========
+async function loadProducts() {
+    document.getElementById("content").innerHTML = "جارٍ التحميل...";
 
-// إضافة للسلة
-function addToCart(name, price){
-  cart.push({name, price});
-  renderCart();
+    const productsRef = await db.collection("products").get();
+
+    if (productsRef.empty) {
+        document.getElementById("content").innerHTML = "لا يوجد منتجات.";
+        return;
+    }
+
+    let html = "";
+    productsRef.forEach(doc => {
+        let p = doc.data();
+        html += `
+            <div class="product">
+                <h3>${p.name}</h3>
+                <p>السعر: ${p.price} جنيه</p>
+                <button onclick="addToCart('${doc.id}', '${p.name}', ${p.price})">إضافة للسلة</button>
+            </div>
+        `;
+    });
+
+    document.getElementById("content").innerHTML = html;
 }
 
-// عرض محتوى السلة
-function renderCart(){
-  cartContainer.innerHTML = "";
-  if(cart.length === 0){
-    cartContainer.textContent = "السلة فارغة";
-    return;
-  }
-  cart.forEach(item => {
-    const div = document.createElement("div");
-    div.textContent = ${item.name} - ${item.price} جنيه;
-    cartContainer.appendChild(div);
-  });
+// ======== Add to Cart ==========
+function addToCart(id, name, price) {
+    let cart = JSON.parse(localStorage.getItem('cart') || "[]");
+    cart.push({id, name, price});
+    localStorage.setItem('cart', JSON.stringify(cart));
+    alert("تمت الإضافة إلى السلة");
 }
+
+// ======== Load Cart ==========
+function loadCart() {
+    let cart = JSON.parse(localStorage.getItem('cart') || "[]");
+
+    if (cart.length === 0) {
+        document.getElementById("content").innerHTML = "السلة فارغة";
+        return;
+    }
+
+    let html = "<h2>السلة</h2>";
+    cart.forEach((item, index) => {
+        html += `
+            <div class="product">
+                <h3>${item.name}</h3>
+                <p>${item.price} جنيه</p>
+            </div>
+        `;
+    });
+
+    document.getElementById("content").innerHTML = html;
+}
+
+// فتح المنتجات تلقائي عند الدخول
+loadProducts();
 </script>
 
 </body>
